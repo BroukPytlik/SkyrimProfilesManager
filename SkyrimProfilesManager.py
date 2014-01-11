@@ -1,6 +1,7 @@
 # Author: Jan Tulak (jan@tulak.me]
 # Version: v0.1
 # License: GNU GPLv3
+# Requires Python 2.7
 
 import os,shutil, sys
 

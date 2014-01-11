@@ -3,7 +3,7 @@ SkyrimProfileManager
 
 SPM is a small and simple script in Python, that allows users to organize Skyrim saves with related mods to profiles.
 
-Requires python 2.6
+Requires python 2.7
 
 IMPORTANT !
 ---------------------------------------
