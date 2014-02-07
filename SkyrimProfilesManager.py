@@ -59,6 +59,7 @@ def init():
 			print >> sys.stderr,\
 				"Error: Skyrim wasn't find! Add correct path to",\
 				path(SAVES_ROOT,INI_FILE)
+			os.system('pause')
 			exit (1)
 
 def saveConfig(sPath, sLauncher):
@@ -84,6 +85,7 @@ def loadConfig():
 			"Error: Game path in ini file (",\
 			path(SAVES_ROOT,INI_FILE),\
 			") is invalid!\r\nFix it, or delete the file to autodetect correct path."
+		os.system('pause')
 		exit (1)
 """
 Try to find default path for saves and so
