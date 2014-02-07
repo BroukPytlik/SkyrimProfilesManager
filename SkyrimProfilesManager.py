@@ -1,38 +1,165 @@
 # Author: Jan Tulak (jan@tulak.me]
-# Version: v0.1
+# Version: v0.2
 # License: GNU GPLv3
+# Requires: Python 2.7
+#           pywin32    
 
-import os,shutil, sys
+import os,shutil, sys, ConfigParser
+from win32com.shell import shell, shellcon
+import win32file
 
-USERNAME="Jan"
-SKYRIM_PATH="E:\\Steam\\steamapps\\common\\skyrim\\"
-SKYRIM_BINARY="skse_loader.exe"
-
-SAVES_ROOT="c:\\Users\\"+USERNAME+"\\Documents\\my games\\skyrim"
-
-MODS_FILE="C:\\Users\\"+USERNAME+"\\Appdata\\Local\\Skyrim\\plugins.txt"
 
 NAMEFILE="name.txt"
-SAVES=SAVES_ROOT+"\\saves"
-NAMEFILE_SAVED=SAVES+"\\"+NAMEFILE
-MODS_SAVED=SAVES+"\\plugins.txt"
+PLUGINS_FILE="plugins.txt"
+INI_FILE="SkyrimProfilesManager.ini"
+DEFAULT_LAUNCHER="SkyrimLauncher.exe"
+
+#SKYRIM_PATH="E:\\Steam\\steamapps\\common\\skyrim\\"
+#SKYRIM_BINARY="skse_loader.exe"
+
+#USERNAME="Jan"
+#SAVES_ROOT="c:\\Users\\"+USERNAME+"\\Documents\\my games\\skyrim"
+#MODS_FILE="C:\\Users\\"+USERNAME+"\\Appdata\\Local\\Skyrim\\plugins.txt"
+
+
+#SAVES=SAVES_ROOT+"\\saves"
+#NAMEFILE_SAVED=SAVES+"\\"+NAMEFILE
+#MODS_SAVED=SAVES+"\\plugins.txt"
+
+SKYRIM_PATH=""
+SKYRIM_BINARY=""
+SAVES_ROOT=""
+MODS_FILE=""
+SAVES=""
+NAMEFILE_SAVED=""
+MODS_SAVED=""
 
 
 
+#///////////////////////////////////////
+def path(*pathes):
+	return os.path.join(*pathes)
 
+def init():
+	# load user profile folder
+	findProfilePathes()
+	
+	if os.path.exists(path(SAVES_ROOT,INI_FILE)):
+		# Config file exists
+		loadConfig()
+		
+	else:
+		# Config file do not exists
+		# try create a new one
+		if findSkyrim():
+			saveConfig(SKYRIM_PATH,SKYRIM_BINARY)
+		else:
+			# autodetecting of Skyrim failed, manual entry needed.
+			saveConfig("",DEFAULT_LAUNCHER)
+			print >> sys.stderr,\
+				"Error: Skyrim wasn't find! Add correct path to",\
+				path(SAVES_ROOT,INI_FILE)
+			exit (1)
 
+def saveConfig(sPath, sLauncher):
+	config = ConfigParser.RawConfigParser()
+	config.add_section('Game')
+	config.set('Game', 'sPath', sPath)
+	config.set('Game', 'sLauncher', sLauncher)
+	
+	# Writing our configuration file to 'example.cfg'
+	with open(path(SAVES_ROOT,INI_FILE), 'wb') as configfile:
+		config.write(configfile)
 
+def loadConfig():
+	global SKYRIM_PATH
+	global SKYRIM_BINARY
+	
+	config = ConfigParser.ConfigParser()
+	config.read(path(SAVES_ROOT,INI_FILE))
+	SKYRIM_PATH=config.get('Game', 'sPath')
+	SKYRIM_BINARY=config.get('Game', 'sLauncher')
+	if not os.path.exists(path(SKYRIM_PATH,SKYRIM_BINARY)):
+		print >> sys.stderr,\
+			"Error: Game path in ini file (",\
+			path(SAVES_ROOT,INI_FILE),\
+			") is invalid!\r\nFix it, or delete the file to autodetect correct path."
+		exit (1)
+"""
+Try to find default path for saves and so
+"""
+def findProfilePathes():
+	global SAVES_ROOT
+	global SAVES
+	global NAMEFILE_SAVED
+	global MODS_SAVED
+	global MODS_FILE
+	
+	userDocuments=shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, None, 0)
+	SAVES_ROOT=path(userDocuments,"my games","skyrim")
+	SAVES=path(SAVES_ROOT,"saves")
+	NAMEFILE_SAVED=path(SAVES,NAMEFILE)
+	MODS_SAVED=path(SAVES,PLUGINS_FILE)
+	
+	appData=shell.SHGetFolderPath(0, shellcon.CSIDL_LOCAL_APPDATA, None, 0)
+	MODS_FILE=path(appData,"Skyrim","plugins.txt")
+	
+""" 
+Try to find Skyrim
+"""	
+def findSkyrim():
+	global SKYRIM_PATH
+	global SKYRIM_BINARY
+	"TODO - better detection"
+	
+	"""
+		Find steam
+		- so at first, find drives
+		- then look for program files or steam in root
+	"""
+	dl = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 
+	drives=[]
+	for d in dl:
+		if win32file.GetDriveType(d+":\\") == win32file.DRIVE_FIXED:
+			drives.append(d+":\\")
+	
+	steam=None
+	for d in drives:
+		for p in [path("Program Files","Steam"), path("Program Files (x86)","Steam"),"Steam"]:
+			if os.path.exists(path(d,p)):
+				steam=path(d,p)
+	
+	if steam is None:
+		return False
+	
+	"""
+		Now find Skyrim and its launcher
+	"""
+	skyrim=path(steam,"steamapps","common","skyrim")
+	if not os.path.exists(skyrim):
+		return False
+	
+	SKYRIM_PATH=skyrim
+	
+	"Test for SKSE first, then use SkyrimLauncher.exe"
+	SKYRIM_BINARY="skse_loader.exe"
+	if not os.path.exists(path(SKYRIM_PATH,SKYRIM_BINARY)):
+		SKYRIM_BINARY=DEFAULT_LAUNCHER
+	
+	return True
+	
 
+	
 #///////////////////////////////////////
 
 def getSavedProfiles():
 	items=os.listdir(SAVES_ROOT)
 	profiles=[]
 	for name in items:
-		if os.path.isdir(os.path.join(SAVES_ROOT,name)):
+		if os.path.isdir(path(SAVES_ROOT,name)):
 			# if it is dir, try to load name
 			try:
-				with open (os.path.join(SAVES_ROOT,name,NAMEFILE), "r") as myfile:
+				with open (path(SAVES_ROOT,name,NAMEFILE), "r") as myfile:
 					profiles.append(myfile.read())
 			except:
 				pass
@@ -62,12 +189,12 @@ def saveProfile(targetName):
 	shutil.copy2(MODS_FILE, MODS_SAVED) # save new one
 	
 	# rename profile
-	shutil.move(SAVES, os.path.join(SAVES_ROOT,targetName))
+	shutil.move(SAVES, path(SAVES_ROOT,targetName))
 	
 
 def loadProfile(name):
 	# rename profile
-	shutil.move(os.path.join(SAVES_ROOT,name),SAVES)
+	shutil.move(path(SAVES_ROOT,name),SAVES)
 	
 	# restore plugins
 	shutil.copy2(MODS_SAVED, MODS_FILE) 
@@ -83,13 +210,13 @@ def createProfile():
 		if i=="cancel":
 			return False
 		
-		if os.path.exists(os.path.join(SAVES_ROOT,i)):
+		if os.path.exists(path(SAVES_ROOT,i)):
 			i=""
 			print "This name already exists."
 			print ""
 			continue
 	
-	namefile = open(os.path.join(NAMEFILE_SAVED), 'w+')
+	namefile = open(path(NAMEFILE_SAVED), 'w+')
 	namefile.write(i)
 	namefile.close()
 	return i
@@ -176,7 +303,8 @@ def main():
 				print "You have to select a profile first!"
 				continue
 			print "Running Skyrim."
-			os.system(os.path.join(SKYRIM_PATH,SKYRIM_BINARY))
+			os.chdir(SKYRIM_PATH)
+			os.system(path(SKYRIM_PATH,SKYRIM_BINARY))
 			return False
 			
 		elif prompt == "n":
@@ -221,6 +349,7 @@ def main():
 print "Skyrim Profile Manager by Zopper"
 print ""
 
+init()
 # run main() again and again while it returns True
 while main():
 	pass
