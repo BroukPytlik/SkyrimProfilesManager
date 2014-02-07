@@ -3,6 +3,9 @@
 # License: GNU GPLv3
 # Requires: Python 2.7
 #           pywin32    
+#
+# build with:
+# cxfreeze SkyrimProfilesManager.py --target-dir dist
 
 import os,shutil, sys, ConfigParser
 from win32com.shell import shell, shellcon
@@ -13,18 +16,6 @@ NAMEFILE="name.txt"
 PLUGINS_FILE="plugins.txt"
 INI_FILE="SkyrimProfilesManager.ini"
 DEFAULT_LAUNCHER="SkyrimLauncher.exe"
-
-#SKYRIM_PATH="E:\\Steam\\steamapps\\common\\skyrim\\"
-#SKYRIM_BINARY="skse_loader.exe"
-
-#USERNAME="Jan"
-#SAVES_ROOT="c:\\Users\\"+USERNAME+"\\Documents\\my games\\skyrim"
-#MODS_FILE="C:\\Users\\"+USERNAME+"\\Appdata\\Local\\Skyrim\\plugins.txt"
-
-
-#SAVES=SAVES_ROOT+"\\saves"
-#NAMEFILE_SAVED=SAVES+"\\"+NAMEFILE
-#MODS_SAVED=SAVES+"\\plugins.txt"
 
 SKYRIM_PATH=""
 SKYRIM_BINARY=""
@@ -254,7 +245,7 @@ def printHelp():
 	print "Number to load a profile"
 	print "'h' to print again this help"
 	print "'r' to run Skyrim"
-	print "'s' to save current plugins"
+	print "'s' to save current plugins list"
 	print "'n' to create a new, empty profile"
 	print "'x' to exit"
 	print ""
