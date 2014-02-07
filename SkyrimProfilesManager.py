@@ -180,13 +180,16 @@ def getActiveProfile():
 	else:
 		return ""
 
-def saveProfile(targetName):
-	# save plugin list
+def savePlugins():
+		# save plugin list
 	try:
 		shutil.move(MODS_SAVED,MODS_SAVED+".bak") # previous version
 	except:
 		pass
-	shutil.copy2(MODS_FILE, MODS_SAVED) # save new one
+	shutil.copy2(MODS_FILE, MODS_SAVED) # save new one	
+		
+def saveProfile(targetName):
+	savePlugins()
 	
 	# rename profile
 	shutil.move(SAVES, path(SAVES_ROOT,targetName))
@@ -248,7 +251,8 @@ def printHelp():
 	print "Options:"
 	print "Number to load a profile"
 	print "'h' to print again this help"
-	print "'s' to run Skyrim"
+	print "'r' to run Skyrim"
+	print "'s' to save current plugins"
 	print "'n' to create a new, empty profile"
 	print "'x' to exit"
 	print ""
@@ -260,7 +264,7 @@ def getPrompt(maxNum):
 		prompt=raw_input().lower()
 		# known options
 		try:
-			if prompt in ["s", "x","n","h"]:
+			if prompt in ["r", "s", "x","n","h"]:
 				return prompt
 			if (int(prompt) >=0 and int(prompt) <= maxNum):
 				return int(prompt)
@@ -299,6 +303,9 @@ def main():
 			continue
 			
 		elif prompt == "s":
+			savePlugins()
+			print "Plugins saved"
+		elif prompt == "r":
 			if active == "":
 				print "You have to select a profile first!"
 				continue
